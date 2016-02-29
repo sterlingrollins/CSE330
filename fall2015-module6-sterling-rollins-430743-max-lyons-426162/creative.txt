@@ -1,0 +1,28 @@
+Sterling Rollins 430743
+Max Lyons	426162
+
+http://ec2-52-25-221-1.us-west-2.compute.amazonaws.com:3456/
+
+Creative portion:
+
+Chat commands:
+	type /help to see a list of all commands
+
+	/whisper (user): send a private message to a user
+
+	/kick (user): kicks the user if you have priveledges
+
+	/ban (user): bans a user if you have priveledges
+
+Emojis:
+	Supports unicode emojis at the bottom of the page. Click the button to have the emojis inserted into the chatbox to get ready to send.
+	Used a twitter API script in order to give emojis better support across browsers.
+
+Img Regex support:
+
+	Allows the posting of 250px by 250px images when a proper url is sent to a picture with a .jpg tag.
+	
+Return Key:
+	Return key allows you to send messages when the chatbox is selected
+
+

@@ -1,0 +1,29 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-2">
+      <!--Sidebar content-->
+
+      Search: <input ng-model="query">
+
+    </div>
+    <div class="col-md-10">
+      <!--Body content-->
+        <h1>List of Coffees </h1>
+      <ul class="coffees">
+
+        <span class="col-md-3">Reviews</span>
+         <span class="col-md-3">Name</span>
+         <span class="col-md-3">Brand</span>
+         <span class="col-md-3">Country</span>
+        <hr>
+        <li ng-repeat="coffee in coffees | filter:query | orderBy:'name'">
+          <a style="border-bottom:1px solid #d3d3d3" class="col-md-3"  href="#/reviews/{{coffee.id}}">Reviews</a>
+         <span class="col-md-3">{{coffee.name}}</span>
+        <span class="col-md-3">{{coffee.brand}}</span>
+        <span class="col-md-3">{{coffee.country}}</span>
+        </li>
+      </ul>
+
+    </div>
+  </div>
+</div>

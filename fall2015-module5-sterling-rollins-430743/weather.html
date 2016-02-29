@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<head>
+
+<script>
+
+function fetchWeather(){
+var xmlHttp = new XMLHttpRequest();
+xmlHttp.open("GET", "http://classes.engineering.wustl.edu/cse330/content/weather_json.php");
+xmlHttp.addEventListener("load", ajaxCallback, false);
+xmlHttp.send(null);
+
+}
+function ajaxCallback(event){
+
+        var jsonData = JSON.parse(event.target.responseText);       
+        var updatedElement = jsonData.updated;
+        var locationElement = jsonData.location;
+        var windElement = jsonData.wind;
+        var atmosphereElement = jsonData.atmosphere;
+        var currentElement = jsonData.current;
+        var tomorrowElement = jsonData.tomorrow;
+        var dayAfterElement = jsonData.dayafter;
+        var temp = currentElement.temp;
+        var humidity = atmosphereElement.humidity;
+        var tomorrowCode = tomorrowElement.code;
+        var tomorrowImage = 'http://us.yimg.com/i/us/nws/weather/gr/' + tomorrowCode + 'ds.png';
+        var city = locationElement.city;
+        var state = locationElement.state;
+        var dayAfterCode = dayAfterElement.code;
+        var dayAfterImageSource = 'http://us.yimg.com/i/us/nws/weather/gr/' + dayAfterCode + 'ds.png';
+        var htmlCity = document.createElement("strong");
+        
+        //City
+        htmlCity.appendChild(document.createTextNode(city));
+        document.getElementsByClassName("weather-loc")[0].appendChild(htmlCity);        
+        document.getElementsByClassName("weather-loc")[0].appendChild(document.createTextNode(" " + state));
+        
+        //Temperature   
+        document.getElementsByClassName("weather-temp")[0].appendChild(document.createTextNode(temp));  
+        
+        //Humidity      
+        document.getElementsByClassName("weather-humidity")[0].appendChild(document.createTextNode(humidity));
+
+        //Tomorrow Weather Image
+        document.getElementsByClassName("weather-tomorrow")[0].src = tomorrowImage;     
+
+        //Next Day Weather Image
+        document.getElementsByClassName("weather-dayaftertomorrow")[0].src = dayAfterImageSource;   
+
+
+
+document.addEventListener("DOMContentLoaded", fetchWeather, false);
+document.addEventListener("DOMContentLoaded", function(event){
+document.getElementById("refresh-button").addEventListener("click", function(event){
+document.getElementsByClassName("weather-loc")[0].removeChild(document.getElementsByClassName("weather-loc")[0].firstChild);
+        document.getElementsByClassName("weather-loc")[0].removeChild(document.getElementsByClassName("weather-loc")[0].firstChild);
+
+        document.getElementsByClassName("weather-temp")[0].removeChild(document.getElementsByClassName("weather-temp")[0].firstChild);
+        document.getElementsByClassName("weather-humidity")[0].removeChild(document.getElementsByClassName("weather-humidity")[0].firstChild);
+
+        fetchWeather(); 
+}, false);
+}  ,false);
+</script>
+
+<link rel="stylesheet" href="http://classes.engineering.wustl.edu/cse330/content/weather.css" type="text/css"/>
+<meta charset="utf-8"/>
+<title>My Web Page</title>
+<style type="text/css">
+body{
+        width: 760px; /* how wide to make your web page */
+        background-color: teal; /* what color to make the background */
+        margin: 0 auto;
+        padding: 0;
+        font:12px/16px Verdana, sans-serif; /* default font */
+}
+div#main{
+        background-color: #FFF;
+        margin: 0;
+        padding: 10px;
+}
+</style>
+</head>
+<body><div id="main">
+
+<!-- CONTENT HERE -->
+<div class="weather" id="weatherWidget">
+        <div class="weather-loc"></div>
+        <div class="weather-humidity"></div>
+        <div class="weather-temp"></div>
+        <img class="weather-tomorrow" />
+        <img class="weather-dayaftertomorrow" />
+        <input type="button" id="refresh-button" value="refresh">
+</div>
+
+</div></body>
+</html>

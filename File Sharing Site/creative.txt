@@ -1,0 +1,26 @@
+Sterling Rollins: 430743
+Max Lyons: 426162
+
+Instance: http://ec2-52-25-221-1.us-west-2.compute.amazonaws.com/file_sharing_site.php
+
+Creative portion:
+1.Added a php download script so that when a user clicks the “Download” button, the file downloads automatically without the user having to do “Save linked file as”.
+
+2.If a visitor to the site enters a user name that is not part of user.txt, they will be prompted with the choice to join the site as the user name that they submitted on the home page of the site. They will then have a folder created for them in srv/file_sharing_site/$_SESSION[‘user’].
+
+Current usernames for the site:
+usera
+userb
+userc
+sterling
+max
+lyons
+nicolederosa
+ted
+tedlttile
+tommy
+tommyt
+lucas
+fff
+
+You can add any additional ones that you would like.

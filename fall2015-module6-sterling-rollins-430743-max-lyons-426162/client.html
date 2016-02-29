@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html>
+   <head>
+
+	<title>Max and Sterling's Chatroom </title>
+	<meta charset="utf-8"/>
+	<script src="//twemoji.maxcdn.com/twemoji.min.js"></script>  	
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" >
+     	<link rel="stylesheet" href="chat.css"> 
+	<script src="/socket.io/socket.io.js"></script>      
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>	
+	<link href='https://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>	
+	<style type="text/css">
+			body{
+				background-color: black;
+				padding:20px;
+				margin-bottom:40px;
+			}
+			h1,h2,h3,h4,h5,h6{
+				color:#00E32D;
+				font-family: 'Press Start 2P', cursive;
+			}	
+			h1{
+				font-size: 36px;
+			}
+			h2{
+				font-size: 24px;
+			}
+			p,div{
+				font-family: 'Press Start 2P', cursive;
+				color:#E9E9E9;
+			}
+			textarea, input{
+				font-family: 'Press Start 2P', cursive;
+				color: black;
+			}
+			button{
+				font-family: 'Press Start 2P', cursive;
+				color: #222930;
+			}
+			#web-title{
+				padding:5px;
+				border-bottom: 5px solid #E9E9E9;
+			}
+			#current-room-name{
+				padding-top:5px;
+				border-right: 5px solid #E9E9E9;
+				border-top: 5px solid #E9E9E9;
+			}
+			#chat-list ,#currently-logged-in-as ,#users-in-room {
+				height:150px;
+                                
+                                overflow:auto;
+			}
+			#chatlog {
+				height:300px;
+				border-right: 5px solid #E9E9E9;	
+				overflow:auto;
+			}
+			
+			#emoji_table{
+				margin:10px;
+				border: 5px solid #E9E9E9;
+
+			}
+			.emoji-button{
+				width:100px;
+			}
+			#emoji-show{
+				width:125px;
+			}
+			img.emoji {  
+ 				 // Override any img styles to ensure Emojis are displayed inline
+  				margin: 0px !important;
+  				display: inline !important;
+			}
+			#pms{
+				border-top: 5px solid #E9E9E9;
+			}
+			</style>
+
+	<script type="text/javascript">
+				
+		//Start up the client side of the server
+		var socketio = io.connect();
+
+		//User is initially null 
+		var user = null;
+
+		//Always log into the lobby
+		var curr_room = "lobby_room";
+
+		//Do basic page maintenance whent the page is first loaded		
+		$(document).ready(function(){
+			$("#sign-out-button").hide();
+			$('#emoji_table').hide();
+ 				// Set the size of the rendered Emojis
+  				// This can be set to 16x16, 36x36, or 72x72
+  				twemoji.size = '16x16';
+
+  				// Parse the document body and
+  				// insert <img> tags in place of Unicode Emojis
+  				twemoji.parse(document.body);
+
+
+		});
+
+		//Responses from the server
+				
+		
+		//Callback for a banned user trying to join a room	
+		socketio.on("banned", function(data){
+			alert("You have been banned from that room.");
+			document.getElementById("lobby_room").checked = true;	
+		});	
+		//Asks the user for a supplied password if they try to switch into a private room
+		socketio.on("password_request",function(data){
+			password = prompt("This room requires a password.");
+			socketio.emit("password_response",{password:password});
+		});
+		//Supplied password did not work.
+		socketio.on("password_failed", function(data){
+			if(data.success){	
+				alert("Your password was wrong.");
+				document.getElementById("lobby_room").checked = true;  
+				socketio.emit("switch_room", {user:user, old_room:curr_room, new_room:'lobby_room'});	
+			}
+		});
+		//Lets the bannee know that they have been banned from a particular room
+		socketio.on("ban_call_back", function(data){
+			if(data.success){
+				alert('you have been been banned from ' + data.room);
+			}
+			document.getElementById("lobby_room").checked = true;
+		});
+		//Lets the bannee know that they have been kicked from a particular room
+		socketio.on("kick_call_back", function(data){
+                        if(data.success){
+                                alert('you have been been kicked from ' + data.room);
+                        }
+			document.getElementById("lobby_room").checked = true;
+			
+                });
+		//Switches the user into a public room
+		socketio.on("public_room_switch", function(data){
+		
+				//Updates the user's current room
+				document.getElementById("current-room-name").textContent = data.new_room;			
+				curr_room = data.new_room;
+				
+				while(chatlog.firstChild){
+					chatlog.removeChild(chatlog.firstChild);
+				}
+				socketio.emit("switched_rooms",{success:true} );			
+				
+		});	
+		//Adds a room to the room list on the DOM
+		socketio.on("add_room_to_list", function(data){
+
+	
+				var rooms_list = data.rooms;	
+				 var chat_list  = document.getElementById("chat-list");
+                                 while(chat_list.firstChild){
+                                         chat_list.removeChild(chat_list.firstChild);
+                                 
+				}
+		
+				for(var i = 0; i< rooms_list.length; i++){
+					 var new_radio = document.createElement("input");
+					var room_name = rooms_list[i];
+	                      
+                                       new_radio.setAttribute("class","room");
+                       			 new_radio.setAttribute("onchange", "switch_room()");            
+                        		 new_radio.setAttribute("type", "radio");
+                       			  new_radio.setAttribute("id", room_name);
+                         		new_radio.setAttribute("name", "room");
+        					document.getElementById("chat-list").appendChild(document.createElement("br"));
+                         		document.getElementById("chat-list").appendChild(new_radio);
+                         		document.getElementById("chat-list").appendChild(document.createTextNode(room_name)); 
+                                 } 
+
+		});
+		
+	
+		//Displays a picture in the chat at 250px by 250px
+		socketio.on("picture_to_client",function(data){
+			document.getElementById("chatlog").appendChild(document.createElement("hr"));
+			var picture = document.createElement("img");
+			picture.setAttribute("style", "width:250px; height:250px");
+			picture.setAttribute("src", data.url);
+			picture.setAttribute("alt", data.user);
+			document.getElementById("chatlog").appendChild(document.createTextNode(data.user + ": "));
+			document.getElementById("chatlog").appendChild(picture);	
+		}); 
+		//Callback from messages to a specific room	
+		socketio.on("message_to_client",function(data) {
+    	    			     //Append an HR thematic break and the escaped HTML of the new message
+      				     document.getElementById("chatlog").appendChild(document.createElement("hr"));
+					var user_obj = document.createElement("div");
+					
+					var class_string = "user " + data.user;
+					user_obj.setAttribute("class",class_string);
+		
+					user_obj.appendChild(document.createTextNode(data.user + ": " + data.message));			
+
+					document.getElementById("chatlog").appendChild(user_obj);
+					twemoji.size = '16x16';
+					twemoji.parse(document.body);
+
+		 });
+		//This happens when the user joins the site. Updates the you are logged in as text
+		socketio.on("user_join_callback", function(data){
+					if(data.success){
+
+						document.getElementById("currently-logged-in-as").textContent = "You are logged in as " + data.user.username;
+					user = data.user.username;
+		
+				}	
+		});
+		//displays pms
+		socketio.on("pm", function(data){
+			
+			 document.getElementById("pms").appendChild(document.createElement("hr"));
+         document.getElementById("pms").appendChild(document.createTextNode(data['sender'] + ': ' + data['message']));	
+	
+		});
+		
+		//Callback for when a user asks to log out
+		socketio.on("user_logout_callback", function(data){
+
+			
+				 if(data.success){
+
+                                       	document.getElementById("currently-logged-in-as").textContent = "You are not currently logged in.";
+                                        user = null;
+					curr_room = "lobby_room";
+					//document.getElementById("lobby_room").checked = true;	
+                                }       
+		});	
+		//Call back for joining site, adds a user to the list of users in a room
+		socketio.on("update_users_list", function(data){
+			//Only update the room if the data.room matches the current room
+			//Update the list of users in the current room
+				
+			var room = data.room;		
+			if(room == curr_room){
+			//Update the rooms
+			
+				var user_list = document.getElementById("user-list");
+				while(user_list.firstChild){
+					user_list.removeChild(user_list.firstChild);
+				}		
+				var user_length = data.users.length;
+				for(var i = 0; i < user_length; i++){
+				
+					var user_name = data.users[i].username;
+					var newNode = document.createElement("p");
+					newNode.appendChild(document.createTextNode(user_name));
+					document.getElementById("user-list").appendChild(newNode);	
+					
+				} 
+			}	
+		});
+
+ 		//Functions that talk to the server
+		//User chooses an name, then that name gets store as user
+		 function login(){
+			var proposed_name = document.getElementById("sign-in").value;
+		
+		//Ensures that the name is valid to make the other methods in the script work properly	
+			if (proposed_name == null || proposed_name == "" || !/(\w{1,})/.test(proposed_name)){
+				alert("This name doesn't work, Sorry");
+			}
+			else{
+				//Tells the server that this person wishes to have this username 
+				//user = proposed_name;
+				
+				socketio.emit("user_joined", {user:proposed_name});
+				$("#sign-in-button").hide();
+				$("#sign-in").hide();
+				$("#sign-out-button").show();
+			}
+		}	
+
+		//Signs a user out	
+ 		function signOut(){
+			
+			$("#sign-out-button").hide();
+			 $("#sign-in-button").show();
+                         $("#sign-in").show(); 
+			socketio.emit("user_logged_out", {user: user,room:curr_room});
+			                               while(chatlog.firstChild){
+                                        chatlog.removeChild(chatlog.firstChild);
+                                }
+	
+		 } 
+		//Listens for the press of the enter key to send a message
+		$(document).ready( function() {
+	
+			$("#message_input").keyup(function(event){
+   				 if(event.keyCode == 13){
+       				 $("#send_button").click();
+   				 }
+			});			
+	
+    		});
+		
+		//Sends a message to the server to be displayed on the page.
+     		 function sendMessage(){
+       		 	
+     		 	var msg = document.getElementById("message_input").value;
+        		document.getElementById("message_input").value = "";
+
+
+			//Ensure the message is valid before checking to see if it matches chat commands`
+        		if (msg === "") {
+            	
+				return;
+			}
+			
+        		if (user == null){
+				//Must be logged in to submit a message
+				return;	
+			} else {
+		//Ban Regex	
+			if(/(\/ban) +(\w{1,})/.test(msg)){
+				//Ban the target user from the current room if priveledges allow
+            			var myRegexp = /(\/ban) +(\w{1,})/g;
+				var match = myRegexp.exec(msg);
+                                var target = match[2];
+			
+				ban_user(target);		
+			}
+
+		//Kick Regex
+			else if(/(\/kick) +(\w{1,})/.test(msg)){
+				//Kick the user from the current room if priveledges allow
+				var myRegexp = /(\/kick) +(\w{1,})/g;
+				var match = myRegexp.exec(msg);
+                                var target = match[2];
+		
+				kick_user(target);
+			}
+		//Whisper Regex
+			else if(/(\/whisper) +(\w{1,})/.test(msg)){
+				//Private message to the user
+				var myRegexp = /(\/whisper) +(\w{1,})/g;
+				var match = myRegexp.exec(msg);
+				var target = match[2];
+			
+				var pm = prompt("What do you want to say to " + target + "?");
+				pm_user(target, pm);
+			}
+		//Sends Picture
+			else if(/[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&\/\/=]*).jpg/.test(msg)){
+			
+				socketio.emit("picture_to_server", { url:msg, user:user, room:curr_room });		
+
+		//Tests to see if help was asked for
+			}else if(/(\/help)/.test(msg)){
+					//Help message that responds with a list of chat commands
+					msg = "List of commands: /help: get help, /whisper (user): private message another user, /ban (user): removes the user permanently from a room that you control, /kick (user): temporarily removes a user from a room you control.";
+			  socketio.emit("message_to_server", {
+                                         message: msg,		
+                                        user: user,
+                                        room: curr_room
+                                        });
+				
+			}else{
+				//if no chat commands were entered, send a regular message
+				socketio.emit("message_to_server", {
+                                        message: msg,
+                                        user: user,
+                                        room: curr_room
+                                        });
+                                }
+
+			}
+		}
+			
+		//Add a room to the list ask whether it should be password protected or not. Leave blank to have no password
+		function addRoom(){	
+			var name = document.getElementById('room-add').value;
+			//Makes room names case insensitive
+			var print_name = name;
+			name = name.toLowerCase();	
+			name = name + "_room";
+				
+			var room_check = document.getElementById(name);
+			//Check if the room already exists
+			if(room_check != null){
+				alert("Room name already exists");
+				return;
+			}	
+			//Requires the user to be logged in in order to create a room	
+			if(user == null){	
+				return;
+			}
+		
+			//Determines whether the room will be a private or public room	
+			var password = prompt("Do you want the room to have a password? (Leave blank for no password)");
+				document.getElementById("room-add").value = '';
+			//Requires that room has a name	
+				if(name != "_room"){
+					if(password == ""){
+						socketio.emit("new_public_room", {name: name, creator: user, printname: print_name});
+					}
+					else{
+						socketio.emit("new_private_room", {name:name, creator:user, password:password, printname: print_name});
+					}		
+				}
+				else{
+					alert("Room must have a name");
+				}			
+		}
+		//Uses radio buttons in order to allow the user to switch their rooms
+	
+		function switch_room() {
+				var room_switch	= document.getElementsByClassName("room");
+				for (var i = 0; i< room_switch.length; i++){
+					if(room_switch[i].checked){
+						room_switch = room_switch[i].getAttribute('id');	
+						break;
+					}
+				}
+			
+				//If return from the server reveals that this is a private room, require a password
+				if(curr_room != switch_room){
+					socketio.emit("switch_room", {user:user, old_room:curr_room, new_room:room_switch});
+				}
+				else{
+					alert('You are already in that room.');
+				}	
+    		}
+
+		//Takes in a username from the chat commands and bans the user if priveledges allows
+		function ban_user(bannee) {	
+				socketio.emit("ban_user", {banner:user, bannee:bannee, room:curr_room});	
+    		}
+
+		//Takes in a username from the chat commands and kicks the user if priveledges allow		
+    		function kick_user(bannee) {
+			socketio.emit("kick_user", {banner:user, bannee:bannee, room:curr_room});	
+    		}
+
+		//Send a pm to a target user
+		function pm_user(target, pm){
+				socketio.emit("pm_user", {target:target, message: pm, sender: user});
+		}
+			
+
+		//Emoji Listeners - each is triggered by a button and outputs the proper unicode	
+		function show_emojis(){
+			$("#emoji_table").show();	
+		}
+		function hide_emojis(){
+			 $("#emoji_table").hide();
+		}
+		function send_smiley(){	
+			document.getElementById("message_input").value += '\u263A';		
+		}
+		function send_frowny(){ 
+                        document.getElementById("message_input").value += "\u2639 ";              
+                }  
+		function send_check(){ 
+                        document.getElementById("message_input").value += "\u2705";              
+                }  
+		function send_raise_hand(){ 
+                        document.getElementById("message_input").value += "\u270B";              
+                }  			
+		function send_peace(){ 
+                        document.getElementById("message_input").value += "\u270C";              
+                }  
+		function send_kiss(){ 
+                        document.getElementById("message_input").value += "\u1F618";              
+                } 
+		function send_x(){
+			document.getElementById("message_input").value += "\u274C";   
+		}
+		function send_question(){
+			document.getElementById("message_input").value += "\u2753";    
+		}
+		function send_exclamation(){
+                        document.getElementById("message_input").value += "\u2757";    
+                }
+		function send_upvote(){
+			document.getElementById("message_input").value += "\u261D";
+		}	
+		function send_skull(){
+                        document.getElementById("message_input").value += "\u2620 ";
+                }
+		function send_heart(){
+			document.getElementById("message_input").value += "\u2764";
+	}	
+	</script>
+   </head>
+   <body>
+	<div id="main">
+		<h1 id="web-title" class="col-xs-12">Sterling and Max's Chatroom </h1>
+		<hr>
+		 		<div id="login-register" class="col-md-3 col-xs-12">
+			<!-- Do not require password to register? Allow user to join with any user name as long as it is not currently in use -->
+			<p id="currently-logged-in-as"> You are not currently logged in </p>
+			<input type="text" id="sign-in"/>
+			
+			<button id="sign-in-button" onclick="login()">Sign in </button>
+			<!-- If signed in, replace the sign in button with a sign out button (AKA USE JQUERY TO HIDE ELEMENTS -->
+			<button id="sign-out-button" onclick="signOut()">Sign Out </button>
+		</div>
+		<div id="users-in-room" class="col-md-3 col-xs-12">
+			<h2>Users in this room </h2>
+			<!-- update users in this room when the currently selected room changes -->
+			<div id="user-list">
+			</div>
+		</div>
+		<div id="chat-rooms" class="col-md-3 col-xs-12">
+			<h2>All Available Chatrooms</h2>
+			<!--Append a list item here and remove one when a chat room is added or removed -->
+			<form id="chat-list">
+				
+				<input type="radio" onclick="switch_room()" name="room" checked value="lobb_room" class="room" id="lobby_room" > lobby_room<br>
+
+			</form>
+		</div>
+		<div id="add-remove-room" class="col-md-3 col-xs-12">
+			<h2> Add a new room </h2>
+			<input type="text" id="room-add"/>
+			<!--need to add this method -->
+			<button id="add-room" onclick="addRoom()">add </button>	
+			<!--Need to think about strategies for removing a room-->	
+	
+		</div>
+	
+  	    
+  	   	<!--plus the room name to the chatlog -->
+		<h2 id="current-room-name" class="col-md-9 col-xs-12">Lobby </h2>
+		<div style="clear:both" class="col-md-9 col-xs-12" id="chatlog">
+
+		</div>
+		<h2 class="col-md-3 col-xs-12"> Private Messages </h2>
+		<div class="col-md-3 col-xs-12" id="pms">
+			
+		</div>
+		
+		
+			<textarea rows="4" style="clear:both" class="col-xs-12" id="message_input"> </textarea>
+			
+	                 <button id="send_button" class="col-xs-2" style="clear:both" onclick="sendMessage()">send</button>
+			<!--Emoji Table -->
+			<button id="emoji_show" onclick="show_emojis()" class="col-xs-1">Emojis </button>
+
+       		<table class="col-xs-4" style="clear:both" id="emoji_table">
+		<tr><td><button class="emoji-button" id="smiley" onclick="send_smiley()">&#9786; </button></td><td> <button class="emoji-button" onclick="send_frowny()" id="frowny">&#9785;</button></td><td><button onclick="send_check()" class="emoji-button"  id="check">&#9989;</button></td><td><button class="emoji-button" onclick="send_raise_hand()" id="raise-hand">&#9995;</button></td> </tr>
+
+		<tr><td><button class="emoji-button" id="upvote" onclick="send_upvote()"> &#9757; </button></td><td><button class="emoji-button" id="red_x" onclick="send_x()">&#10060; </button></td><td><button class="emoji-button" id="question" onclick="send_question()">&#10067; </button></td><td>
+<button class="emoji-button" id="exclamation" onclick="send_exclamation()">&#10071; </button> </td></tr>
+
+		<tr><td> <button class="emoji-button" id="peace" onclick="send_peace()"> &#9996; </button>  </td><td>  <button class="emoji-button" id="skull" onclick="send_skull()"> &#9760; </button>  </td><td> <button class="emoji-button" id="heart" onclick="send_heart()"> &#x2764; </button>  </td><td> <button class="emoji-button" onclick="hide_emojis()" style="clear:both" id="close-emojis">close</button> </td> </tr>
+		
+		</table>      	
+	</div>
+
+
+</body>
+</html>

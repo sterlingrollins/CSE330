@@ -1,0 +1,50 @@
+/* app css stylesheet */
+
+.menu {
+  list-style: none;
+  border-bottom: 0.1em solid black;
+  margin-bottom: 2em;
+  padding: 0 0 0.5em;
+}
+
+.menu:before {
+  content: "[";
+}
+
+.menu:after {
+  content: "]";
+}
+
+.menu > li {
+  display: inline;
+}
+
+.menu > li:before {
+  content: "|";
+  padding-right: 0.3em;
+}
+span{
+border-bottom:1px solid #d3d3d3;
+}
+.menu > li:nth-child(1):before {
+  content: "";
+  padding: 0;
+}
+li{
+list-style-type:none;
+}
+body{
+background:#ECEAE0;
+background:#63AA9C;
+}
+#main{
+padding-bottom:100px;
+background:#ECEAE0;
+}
+h1,h2{
+color:#63AA9C
+;
+}
+p{
+color:#E9633B;
+}
