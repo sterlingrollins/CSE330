@@ -1,0 +1,11 @@
+<h1>Reviews for {{targetCoffee.name}}</h1>
+
+<span class="col-xs-4">Rating</span>
+<span class="col-xs-4">Comment</span>
+<span class="col-xs-4">Review</span>
+<hr>
+<li ng-repeat='review in targetCoffee.reviews'>
+<span class="col-xs-4">{{review.rating}}</span>
+<span class="col-xs-4">{{review.comment}}</span>
+<span class="col-xs-4">{{review.reviewer}}</span>
+</li>

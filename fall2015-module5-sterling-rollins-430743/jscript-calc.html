@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8"/>
+<title>My Web Page</title>
+<style type="text/css">
+body{
+        width: 760px; /* how wide to make your web page */
+        background-color: teal; /* what color to make the background */
+        margin: 0 auto;
+        padding: 0;
+        font:12px/16px Verdana, sans-serif; /* default font */
+}
+div#main{
+        background-color: #FFF;
+        margin: 0;
+        padding: 10px;
+}
+</style>
+</head>
+<body><div id="main">
+
+
+ <form id="frm"action="http://ec2-52-25-221-1.us-west-2.compute.amazonaws.com/jscript-calc.html" method="post">
+  Argument 1: <input id="arg1" type="number" step="any" name="arg1"><br>
+  Argument 2: <input id="arg2" type="number" step="any" name="arg2"><br>
+
+   <input   id="multiply"type="radio" name="operator" value="multiply" >Multiply
+  <br>
+  <input   id="divide" type="radio" name="operator" value="divide">Divide
+<br>
+ <input id="subtract" type="radio" name="operator"   value="subtract" >Subtract
+  <br>
+  <input id="add" type="radio" name="operator" value="add">Add
+
+</form>
+
+<div id="answer-spot"> </div>
+<script>
+document.getElementById("multiply").addEventListener("click", runCalc, false);
+document.getElementById("divide").addEventListener("click", runCalc, false);
+document.getElementById("subtract").addEventListener("click", runCalc, false);
+document.getElementById("add").addEventListener("click", runCalc, false);
+
+document.getElementById("arg1").addEventListener("keyup", runCalc, false);
+document.getElementById("arg2").addEventListener("keyup", runCalc, false);
+
+function runCalc(){
+        var formElem = document.getElementById("frm");
+        
+        var arg1 = parseFloat(formElem.elements["arg1"].value);
+        var arg2 = parseFloat(formElem.elements["arg2"].value);
+                
+        if((isNaN(arg1) || isNaN(arg2)) && (document.getElementById("multiply").checked || document.getElementById("divide").checked || document.getElementById("subtract").checked || document.getElementById("add").checked) ){
+                 document.getElementById("answer-spot").textContent = "Make sure both inputs are valid numbers";        
+        
+                return;
+        }
+        else{
+                if(document.getElementById("multiply").checked){
+                        document.getElementById("answer-spot").textContent = "Answer: " + arg1*arg2;
+                }else if(document.getElementById("divide").checked){
+                        if(arg2 == 0){
+                                 document.getElementById("answer-spot").textContent = "Cannot divide by zero";
+                                return;
+                        }       
+                        else{
+                        document.getElementById("answer-spot").textContent = "Answer: " + arg1/arg2;    
+                        }       
+
+
+                
+                }else if(document.getElementById("subtract").checked){
+                        var subtracted = arg1-arg2;
+                        document.getElementById("answer-spot").textContent = "Answer: " + subtracted;  
+                }else if(document.getElementById("add").checked){
+                        var added = arg1+arg2;
+                        document.getElementById("answer-spot").textContent = "Answer: " + added;  
+                }
+                else{
+                        document.getElementById("answer-spot").textContent = "Choose an operator"; 
+                }
+        }
+}
+</script>
+</div></body>
+</html>
+
